@@ -10,3 +10,4 @@ class Event(Base):
     league = Column(String)
     event_name = Column(String)
     start_time = Column(DateTime)
+    canonical_key = Column(String, unique=True, index=True)
