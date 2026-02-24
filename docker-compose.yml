@@ -36,6 +36,8 @@ services:
       - .env
     environment:
       BACKEND_URL: ${BACKEND_URL:-http://backend:8000}
+      PYTHONPATH: /app
+      PYTHONUNBUFFERED: "1"
 
   frontend:
     image: node:20

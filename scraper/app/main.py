@@ -44,13 +44,35 @@ def event_to_payload(event):
     }
 
 
+async def post_startup_test(client: httpx.AsyncClient) -> None:
+    test_payload = {
+        "canonical_key": "startup__vs__probe",
+        "sport": "esports",
+        "league": "startup-check",
+        "bookmaker": "ladbrokes",
+        "outcomes": [
+            {"name": "startup", "odds": 2.0},
+            {"name": "probe", "odds": 1.8},
+        ],
+    }
+
+    response = await client.post(POST_ODDS_URL, json=test_payload, timeout=10.0)
+    print(f"[scraper] startup POST /odds status={response.status_code} body={response.text}")
+    if response.status_code != 200:
+        raise RuntimeError(f"startup POST failed with status={response.status_code} body={response.text}")
+
+
 async def ingestion_loop() -> None:
+    print("[scraper] starting up ...")
+    print(f"[scraper] BACKEND_URL={BACKEND_URL} POST_ODDS_URL={POST_ODDS_URL}")
+
     scrapers = [
         LadbrokesScraper(),
     ]
 
     async with httpx.AsyncClient() as client:
         await wait_for_backend(client)
+        await post_startup_test(client)
 
         while True:
             for scraper in scrapers:
@@ -68,6 +90,8 @@ async def ingestion_loop() -> None:
                             f"[scraper] POST /odds status={response.status_code} "
                             f"bookmaker={payload['bookmaker']} key={payload['canonical_key']}"
                         )
+                        if response.status_code != 200:
+                            print(f"[scraper] POST failure body={response.text}")
                     except Exception as exc:
                         print(f"[scraper] Error posting odds: {exc}")
 
