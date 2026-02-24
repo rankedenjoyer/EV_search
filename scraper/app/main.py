@@ -22,8 +22,15 @@ async def wait_for_backend(client: httpx.AsyncClient) -> None:
             if response.status_code == 200:
                 print(f"[scraper] Backend available at {health_url}")
                 return
+            print(
+                f"[scraper] Backend not ready ({response.status_code}). "
+                f"Retrying in {RETRY_DELAY_SECONDS}s..."
+            )
         except Exception as exc:
-            print(f"[scraper] Backend check failed: {exc}")
+            print(
+                f"[scraper] Backend check failed: {exc}. "
+                f"Retrying in {RETRY_DELAY_SECONDS}s..."
+            )
 
         await asyncio.sleep(RETRY_DELAY_SECONDS)
 
@@ -54,7 +61,10 @@ async def ingestion_loop():
                 try:
                     events = await scraper.fetch_events()
                 except Exception as exc:
-                    print(f"[scraper] fetch failed: {exc}")
+                    print(
+                        f"[scraper] fetch failed for "
+                        f"{scraper.__class__.__name__}: {exc}"
+                    )
                     continue
 
                 for event in events:
@@ -68,6 +78,7 @@ async def ingestion_loop():
                         )
                         print(
                             f"[scraper] POST status={response.status_code} "
+                            f"bookmaker={payload['bookmaker']} "
                             f"key={payload['canonical_key']}"
                         )
                     except Exception as exc:

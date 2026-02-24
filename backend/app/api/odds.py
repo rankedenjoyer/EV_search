@@ -13,7 +13,6 @@ router = APIRouter()
 
 @router.post("/odds")
 async def insert_odds(data: dict, db: AsyncSession = Depends(get_db)):
-
     # -----------------------------
     # NEW NORMALIZED PAYLOAD (Phase 4)
     # -----------------------------
