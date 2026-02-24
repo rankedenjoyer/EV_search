@@ -13,23 +13,16 @@ router = APIRouter()
 
 @router.post("/odds")
 async def insert_odds(data: dict, db: AsyncSession = Depends(get_db)):
-    # -----------------------------
-    # NEW NORMALIZED PAYLOAD (Phase 4)
-    # -----------------------------
     canonical = data.get("canonical_key")
     outcomes = data.get("outcomes")
 
     if canonical and outcomes:
-        result = await db.execute(
-            select(Event).where(Event.canonical_key == canonical)
-        )
+        result = await db.execute(select(Event).where(Event.canonical_key == canonical))
         event = result.scalar_one_or_none()
 
-        # create event if not exists
         if not event:
             teams = canonical.split("__vs__")
             event_name = " vs ".join(t.upper() for t in teams)
-
             event = Event(
                 sport=data.get("sport", "unknown"),
                 league=data.get("league", "unknown"),
@@ -40,7 +33,6 @@ async def insert_odds(data: dict, db: AsyncSession = Depends(get_db)):
             db.add(event)
             await db.flush()
 
-        # insert odds rows
         for outcome in outcomes:
             db.add(
                 Odds(
@@ -53,31 +45,15 @@ async def insert_odds(data: dict, db: AsyncSession = Depends(get_db)):
             )
 
         await db.commit()
+        return {"status": "inserted", "event_id": event.id, "outcomes": len(outcomes)}
 
-        return {
-            "status": "inserted",
-            "event_id": event.id,
-            "outcomes": len(outcomes),
-        }
-
-    # -----------------------------
-    # LEGACY FALLBACK (OLD PAYLOAD)
-    # -----------------------------
-    event_id = data.get("event_id")
-
-    if not event_id:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid payload: missing canonical_key or event_id",
-        )
-
-    event = await db.get(Event, event_id)
+    event = await db.get(Event, data.get("event_id"))
 
     if not event:
-        raise HTTPException(status_code=400, detail="event_id not found")
+        raise HTTPException(status_code=400, detail="event_id not found and canonical payload missing")
 
     odds = Odds(
-        event_id=event_id,
+        event_id=data["event_id"],
         bookmaker=data["bookmaker"],
         outcome=data["outcome"],
         odds=data["odds"],

@@ -8,7 +8,6 @@ from app.normalizer import canonical_key
 
 BACKEND_URL = os.getenv("BACKEND_URL", "http://backend:8000")
 POST_ODDS_URL = f"{BACKEND_URL.rstrip('/')}/odds"
-
 INTERVAL_SECONDS = 30
 RETRY_DELAY_SECONDS = 5
 
@@ -27,10 +26,7 @@ async def wait_for_backend(client: httpx.AsyncClient) -> None:
                 f"Retrying in {RETRY_DELAY_SECONDS}s..."
             )
         except Exception as exc:
-            print(
-                f"[scraper] Backend check failed: {exc}. "
-                f"Retrying in {RETRY_DELAY_SECONDS}s..."
-            )
+            print(f"[scraper] Backend check failed: {exc}. Retrying in {RETRY_DELAY_SECONDS}s...")
 
         await asyncio.sleep(RETRY_DELAY_SECONDS)
 
@@ -48,7 +44,7 @@ def event_to_payload(event):
     }
 
 
-async def ingestion_loop():
+async def ingestion_loop() -> None:
     scrapers = [
         LadbrokesScraper(),
     ]
@@ -61,28 +57,19 @@ async def ingestion_loop():
                 try:
                     events = await scraper.fetch_events()
                 except Exception as exc:
-                    print(
-                        f"[scraper] fetch failed for "
-                        f"{scraper.__class__.__name__}: {exc}"
-                    )
+                    print(f"[scraper] fetch failed for {scraper.__class__.__name__}: {exc}")
                     continue
 
                 for event in events:
                     payload = event_to_payload(event)
-
                     try:
-                        response = await client.post(
-                            POST_ODDS_URL,
-                            json=payload,
-                            timeout=10.0,
-                        )
+                        response = await client.post(POST_ODDS_URL, json=payload, timeout=10.0)
                         print(
-                            f"[scraper] POST status={response.status_code} "
-                            f"bookmaker={payload['bookmaker']} "
-                            f"key={payload['canonical_key']}"
+                            f"[scraper] POST /odds status={response.status_code} "
+                            f"bookmaker={payload['bookmaker']} key={payload['canonical_key']}"
                         )
                     except Exception as exc:
-                        print(f"[scraper] POST error: {exc}")
+                        print(f"[scraper] Error posting odds: {exc}")
 
             await asyncio.sleep(INTERVAL_SECONDS)
 
