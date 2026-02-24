@@ -1,7 +1,7 @@
 import re
 from datetime import datetime, timezone
 
-from playwright.async_api import async_playwright
+from playwright.async_api import async_playwright  # type: ignore[import-not-found]
 
 from app.bookmakers.base_scraper import BaseScraper
 from app.models.normalized_event import NormalizedEvent, NormalizedOutcome

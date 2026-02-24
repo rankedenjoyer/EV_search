@@ -1,7 +1,7 @@
 import asyncio
 import os
 
-import httpx
+import httpx  # type: ignore[import-not-found]
 
 from app.bookmakers.ladbrokes_scraper import LadbrokesScraper
 from app.normalizer import canonical_key
